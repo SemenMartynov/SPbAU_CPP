@@ -1,0 +1,5 @@
+Предлагается реализовать следующие алгоритмы STL для двух категорий итераторов: RandomAccessIterator и ForwardIterator
+
+std::rotate // in-place
+std::reverse // in-place
+std::random_shuffle // in-place
