@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <stdexcept>
+#include <algorithm>
 #include "CException.h"
 
 template<typename T>
@@ -38,13 +39,15 @@ private:
 
 public:
 	Matrix(size_t size);
+	Matrix(const Matrix<T>&);
 	~Matrix();
 	size_t getSize() const;
-	Matrix& operator=(const Matrix&);
+	Matrix& operator=(const Matrix<T>&);
 	const ProxyRow operator[](size_t row) const;
 private:
 	size_t size;
 	T** matrix;
+	void swap(Matrix<T>&);//copy-and-swap
 };
 
 template<typename T>
@@ -60,7 +63,27 @@ try :
 catch (std::bad_alloc& ba)
 {
 	this->~Matrix();
-	throw CException("Out of memory - operation is cancelled.");
+	throw CException("Out of memory - constructor is cancelled.");
+}
+
+template<typename T>
+Matrix<T>::Matrix(const Matrix<T>& otherMatrix)
+try :
+		size(otherMatrix.getSize()), matrix(new T*[size])
+{
+	for (size_t i = 0; i != size; ++i)
+	{
+		matrix[i] = new T[size];
+		for (size_t j = 0; j != size; ++j)
+		{
+			matrix[i][j] = otherMatrix[i][j];
+		}
+	}
+}
+catch (std::bad_alloc& ba)
+{
+	this->~Matrix();
+	throw CException("Out of memory - copy constructor is cancelled.");
 }
 
 template<typename T>
@@ -87,9 +110,15 @@ inline size_t Matrix<T>::getSize() const
 }
 
 template<typename T>
-Matrix<T>& Matrix<T>::operator=(const Matrix<T>& tmp)
+Matrix<T>& Matrix<T>::operator=(const Matrix<T>& otherMatrix)
 {
-	if (this == &tmp)
+
+	Matrix tmp(otherMatrix);
+	swap(tmp);
+	return *this;
+
+/*
+	if (this == &otherMatrix)
 	{
 		return *this;
 	}
@@ -101,14 +130,14 @@ Matrix<T>& Matrix<T>::operator=(const Matrix<T>& tmp)
 
 	try
 	{
-		size = tmp.getSize();
+		size = otherMatrix.getSize();
 		matrix = new T*[size];
 		for (size_t i = 0; i != size; ++i)
 		{
 			matrix[i] = new T[size];
 			for (size_t j = 0; j != size; ++j)
 			{
-				matrix[i][j] = tmp[i][j];
+				matrix[i][j] = otherMatrix[i][j];
 			}
 		}
 		return *this;
@@ -117,9 +146,10 @@ Matrix<T>& Matrix<T>::operator=(const Matrix<T>& tmp)
 		this->~Matrix();
 		throw CException("Out of memory - operation is cancelled.");
 	}
+*/
 }
 
-template<typename T>
+template <typename T>
 const typename Matrix<T>::ProxyRow Matrix<T>::operator[](size_t row) const
 {
 	if (row >= size || row < 0)
@@ -127,6 +157,13 @@ const typename Matrix<T>::ProxyRow Matrix<T>::operator[](size_t row) const
 		throw std::out_of_range("row number in incorrect!");
 	}
 	return ProxyRow(size, matrix[row]);
+}
+
+template <typename T>
+void Matrix<T>::swap(Matrix<T>& otherMatrix)
+{
+	std::swap(size, otherMatrix.size);
+	std::swap(matrix, otherMatrix.matrix);
 }
 
 #endif /* MATRIX_H_ */
