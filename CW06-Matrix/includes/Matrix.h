@@ -47,43 +47,82 @@ public:
 private:
 	size_t size;
 	T** matrix;
-	void swap(Matrix<T>&);//copy-and-swap
+	void swap(Matrix<T>&); //copy-and-swap
 };
 
 template<typename T>
-Matrix<T>::Matrix(size_t size)
-try :
-		size(size), matrix(new T*[size])
+Matrix<T>::Matrix(size_t size) :
+		size(size), matrix(0)
 {
-	for (size_t i = 0; i != size; ++i)
+	try
 	{
-		matrix[i] = new T[size];
+		matrix = new T*[size];
+
+		for (size_t i = 0; i != size; ++i)
+		{
+			matrix[i] = 0;
+		}
+
+		for (size_t i = 0; i != size; ++i)
+		{
+			matrix[i] = new T[size];
+		}
+
+	} catch (std::exception const& e)
+	{
+		if (matrix)
+		{
+			for (size_t k = 0; k != size; ++k)
+				if (matrix[k])
+				{
+					delete[] matrix[k];
+				}
+			delete[] matrix;
+		}
+
+		throw CException("Constructor is cancelled: " + e.what());
 	}
-}
-catch (std::bad_alloc& ba)
-{
-	this->~Matrix();
-	throw CException("Out of memory - constructor is cancelled.");
 }
 
 template<typename T>
-Matrix<T>::Matrix(const Matrix<T>& otherMatrix)
-try :
-		size(otherMatrix.getSize()), matrix(new T*[size])
+Matrix<T>::Matrix(const Matrix<T>& otherMatrix) :
+		size(otherMatrix.getSize()), matrix(0)
 {
-	for (size_t i = 0; i != size; ++i)
+	try
 	{
-		matrix[i] = new T[size];
-		for (size_t j = 0; j != size; ++j)
+		matrix = new T*[size];
+
+		for (size_t i = 0; i != size; ++i)
 		{
-			matrix[i][j] = otherMatrix[i][j];
+			matrix[i] = 0;
 		}
+
+		for (size_t i = 0; i != size; ++i)
+		{
+			matrix[i] = new T[size];
+		}
+
+		for (size_t i = 0; i != size; ++i)
+		{
+			for (size_t j = 0; j != size; ++j)
+			{
+				matrix[i][j] = otherMatrix[i][j];
+			}
+		}
+	} catch (std::exception const& e)
+	{
+		if (matrix)
+		{
+			for (size_t k = 0; k != size; ++k)
+				if (matrix[k])
+				{
+					delete[] matrix[k];
+				}
+			delete[] matrix;
+		}
+
+		throw CException("Copy constructor is cancelled: " + e.what());
 	}
-}
-catch (std::bad_alloc& ba)
-{
-	this->~Matrix();
-	throw CException("Out of memory - copy constructor is cancelled.");
 }
 
 template<typename T>
@@ -112,44 +151,12 @@ inline size_t Matrix<T>::getSize() const
 template<typename T>
 Matrix<T>& Matrix<T>::operator=(const Matrix<T>& otherMatrix)
 {
-
 	Matrix tmp(otherMatrix);
 	swap(tmp);
 	return *this;
-
-/*
-	if (this == &otherMatrix)
-	{
-		return *this;
-	}
-
-	if (this)
-	{
-		this->~Matrix();
-	}
-
-	try
-	{
-		size = otherMatrix.getSize();
-		matrix = new T*[size];
-		for (size_t i = 0; i != size; ++i)
-		{
-			matrix[i] = new T[size];
-			for (size_t j = 0; j != size; ++j)
-			{
-				matrix[i][j] = otherMatrix[i][j];
-			}
-		}
-		return *this;
-	} catch (std::bad_alloc& ba)
-	{
-		this->~Matrix();
-		throw CException("Out of memory - operation is cancelled.");
-	}
-*/
 }
 
-template <typename T>
+template<typename T>
 const typename Matrix<T>::ProxyRow Matrix<T>::operator[](size_t row) const
 {
 	if (row >= size || row < 0)
@@ -159,7 +166,7 @@ const typename Matrix<T>::ProxyRow Matrix<T>::operator[](size_t row) const
 	return ProxyRow(size, matrix[row]);
 }
 
-template <typename T>
+template<typename T>
 void Matrix<T>::swap(Matrix<T>& otherMatrix)
 {
 	std::swap(size, otherMatrix.size);
